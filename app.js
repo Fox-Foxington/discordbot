@@ -7,6 +7,7 @@ const {
 const dotenv = require("dotenv");
 const express = require('express');
 const bodyParser = require('body-parser');
+const { handleGuildMemberAdd, handleVerifyCommand } = require('./modules/roleManager');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -33,8 +34,8 @@ const token = process.env.DISCORD_TOKEN;
 
 // Define a global variable to store bot settings
 let botSettings = {
-  status: "idle",
-  customStatus: "Fixin Shit!",
+  status: process.env.ONLINE_STATUS,
+  customStatus: process.env.CUSTOM_STATUS,
 };
 
 // Parse JSON bodies
@@ -57,6 +58,25 @@ app.post('/receive-message', (req, res) => {
         });
 });
 
+client.on('guildMemberAdd', member => {
+    handleGuildMemberAdd(member);
+});
+
+client.on('messageCreate', message => {
+  
+    console.log(`Message: ${message.content}`);
+    if (!message.content.startsWith('!') || message.author.bot) return;
+
+    const args = message.content.slice(1).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+
+    console.log('Command:', command); // Add this line for debugging
+
+    const mentionOrId = args[0];
+    handleVerifyCommand(message, 'Fox', mentionOrId);
+    
+});
+
 // Function to send message to Discord
 async function sendToDiscord(message) {
     try {
@@ -71,22 +91,7 @@ async function sendToDiscord(message) {
         console.error('Error sending message to Discord:', error);
     }
 }
-/*
-// Define route to handle link clicks
-app.post('/click', (req, res) => {
-    const { link } = req.body;
-    if (link) {
-        sendToDiscord(`Link clicked: ${link}`)
-            .then(() => res.sendStatus(200))
-            .catch(error => {
-                console.error('Error sending message to Discord:', error);
-                res.status(500).send('Internal Server Error');
-            });
-    } else {
-        res.status(400).send('Bad request');
-    }
-});
-*/
+
 
 // Event handler for when the bot is ready
 client.once("ready", async () => {
@@ -138,9 +143,7 @@ client.on("messageCreate", (message) => {
   }
 });
 
-client.on("messageCreate", (message) => {
-  console.log("Message:", message.content);
-});
+
 
 // Log in to Discord with your bot's token
 client.login(token);
