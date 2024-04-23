@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Settings</title>
+</head>
+<body>
+    <h1>Bot Settings</h1>
+    <form id="botSettingsForm">
+        <label for="status">Status:</label>
+        <input type="text" id="status" name="status" placeholder="Online, Idle, DoNotDisturb, Invisible" required>
+        <br>
+        <label for="customStatus">Custom Status:</label>
+        <input type="text" id="customStatus" name="customStatus" placeholder="Custom Status" required>
+        <br>
+        <button type="submit">Update Bot Settings</button>
+    </form>
+
+    <script>
+        const botSettingsForm = document.getElementById("botSettingsForm");
+
+        botSettingsForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const status = document.getElementById("status").value;
+            const customStatus = document.getElementById("customStatus").value;
+
+            // Send a POST request to update bot settings
+            const response = await fetch("/update-bot-settings", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ status, customStatus }),
+            });
+
+            if (response.ok) {
+                alert("Bot settings updated successfully!");
+            } else {
+                alert("Failed to update bot settings");
+            }
+        });
+    </script>
+</body>
+</html>
