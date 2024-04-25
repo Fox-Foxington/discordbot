@@ -42,7 +42,22 @@ module.exports = {
             const mentionOrId = args[0];
             handleVerifyCommand(message, 'Admin', mentionOrId);
         }
+
+        // Event handler for incoming messages
+
+       else if (message.content.startsWith('1') && message.member.permissions.has('ADMINISTRATOR')) {
+        // Check if the channel exists and its name starts with "ticket-"
+        if (message.channel && message.channel.name.startsWith('ticket-')) {
+            // Delete the channel
+            message.channel.delete()
+                .then(() => console.log(`Channel ${message.channel.name} deleted`))
+                .catch((error) => console.error('Error deleting channel:', error.message));
+        } else {
+            // If the channel doesn't exist or its name doesn't start with "ticket-", send a message indicating that it cannot be deleted
+            message.channel.send('This command can only be used in ticket channels or the channel does not exist.');
+        }
     }
-};
+}
+};   
 
 

@@ -9,7 +9,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const client = new Client ({ intents: 32767 });
 const { handleGuildMemberAdd, handleVerifyCommand } = require('./modules/roleManager');
-const { createTicket } = require('./modules/ticketsystem');
+const { createTicket } = require('./modules/ticketSystem');
 
 // Load environment variables from .env file
 dotenv.config();
