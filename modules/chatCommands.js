@@ -1,5 +1,7 @@
 // Import the commandList module
 const { sendCommandListEmbed } = require("./commandList");
+const { handleVerifyCommand } = require("./roleManager");
+
 
 module.exports = {
     handleChatCommands: async function(message) {
@@ -32,6 +34,15 @@ module.exports = {
             // Call the sendCommandListEmbed function to send the command list
             sendCommandListEmbed(message);
         }
+
+        else if (message.content.startsWith('!verify')) {
+            const args = message.content.slice(1).trim().split(/ +/);
+            const command = args.shift().toLowerCase();
+            console.log('Command:', command); // Add this line for debugging
+            const mentionOrId = args[0];
+            handleVerifyCommand(message, 'Admin', mentionOrId);
+        }
     }
 };
+
 

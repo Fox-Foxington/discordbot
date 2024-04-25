@@ -1,5 +1,8 @@
 // eventHandlers.js
 
+
+
+
 function handleGuildMemberAdd(member) {
     const guild = member.guild;
     const role = guild.roles.cache.find(role => role.name === 'New');
@@ -68,7 +71,7 @@ function handleVerifyCommand(message, adminRoleName, mentionOrId) {
         });
 }
 
-module.exports = { handleVerifyCommand };
+
 
 
 
