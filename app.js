@@ -18,10 +18,6 @@ const app = express();
 const port = process.env.PORT;
 
 
-
-
-
-
 // Token for your bot
 const token = process.env.DISCORD_TOKEN;
 
@@ -36,9 +32,41 @@ let botSettings = {
 // Parse JSON bodies
 app.use(bodyParser.json());
 
+
+
+// Event handler for when the bot is ready
+client.once("ready", async () => {
+  console.log(`Logged in as ${client.user.tag}`);
+  try {
+     // Set the bot's status
+     await client.user.setStatus(botSettings.status);
+    // Set the bot's presence
+    const status = await client.user.setPresence({
+    
+    
+      activities: [
+        {
+          name: "customname",
+          type: ActivityType.Custom,
+          state: botSettings.customStatus,
+        },
+      ],
+    });
+    console.log("Bot presence set successfully!");
+    //console.log(JSON.stringify(status));
+  } catch (error) {
+    console.error("Error setting bot presence:", error);
+  }
+});
+
+
+
+/*
+//website link
 // Define route to receive messages
 app.post('/receive-message', (req, res) => {
     const { message } = req.body;
+  
     console.log('Received message from web application:', message);
 
     // Send the received message to Discord
@@ -52,6 +80,16 @@ app.post('/receive-message', (req, res) => {
             res.status(500).send('Internal Server Error');
         });
 });
+
+
+
+
+
+
+
+
+
+
 
 client.on('guildMemberAdd', member => {
     handleGuildMemberAdd(member);
@@ -155,30 +193,10 @@ async function sendToDiscord(message) {
 }
 
 
-// Event handler for when the bot is ready
-client.once("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
-  try {
-     // Set the bot's status
-     await client.user.setStatus(botSettings.status);
-    // Set the bot's presence
-    const status = await client.user.setPresence({
-    
-    
-      activities: [
-        {
-          name: "customname",
-          type: ActivityType.Custom,
-          state: botSettings.customStatus,
-        },
-      ],
-    });
-    console.log("Bot presence set successfully!");
-    //console.log(JSON.stringify(status));
-  } catch (error) {
-    console.error("Error setting bot presence:", error);
-  }
-});
+
+
+
+
 
 
 // Event listener for incoming messages
@@ -195,9 +213,25 @@ client.on("messageCreate", (message) => {
   }
 });
 
+
+
+*/
+
+
+client.on("messageCreate", (message) => {
+  console.log(`Message from ${message.author.tag}: ${message.content}`);
+});
+
+
+
+
+
+
+
+
 client.on("messageCreate", (message) => {
   // Check if the message starts with the command prefix ("/ping")
-  if (message.content === "/ping") {
+  if (message.content.startsWith("/ping")) {
     // Calculate the bot's latency (ping)
     const latency = Date.now() - message.createdTimestamp;
     // Respond with the bot's latency
@@ -210,8 +244,4 @@ client.on("messageCreate", (message) => {
 // Log in to Discord with your bot's token
 client.login(token);
 
-
-app.listen(port, () => {
-    console.log(`Main app is running on port ${port}`);
-  });
   
