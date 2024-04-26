@@ -1,0 +1,274 @@
+const {
+    Client,
+    GatewayIntentBits,
+    Permissions,
+    EmbedBuilder,
+    ChannelType,
+    PermissionsBitField,
+  } = require("discord.js");
+  const dotenv = require("dotenv");
+  const express = require("express");
+  const bodyParser = require("body-parser");
+  
+  const {
+    handleGuildMemberAdd,
+    handleVerifyCommand,
+  } = require("./modules/roleManager");
+  //const { createTicket, initializeTicketSystem } = require("./modules/ticketSystem");
+  const { handleChatCommands } = require("./modules/chatCommands");
+  const { setupBot } = require("./modules/mainBot");
+  
+  // Load environment variables from .env file
+  dotenv.config();
+  
+  // Create an Express application
+  const app = express();
+  const port = process.env.PORT;
+  
+  // Token for your bot
+  const token = process.env.DISCORD_TOKEN;
+  
+  // Create a new Discord client
+  const client = new Client({
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildMembers,
+      32767,
+    ],
+  });
+  
+  let welcomeMessage; // Declare welcomeMessage variable globally
+  
+  client.on("ready", async () => {
+    console.log(`Logged in as ${client.user.tag}`);
+  
+    try {
+      // Fetch guild, channel, and message
+      const guildId = "999291586141749359";
+      const channelId = "1232920686499201135";
+      const messageId = "1232920885212745769";
+      const guild = await client.guilds.fetch(guildId);
+      const channel = guild.channels.cache.get(channelId);
+  
+      if (!channel) {
+        console.error(`Channel ${channelId} not found in guild ${guildId}`);
+        return;
+      }
+  // Define a function to handle message reaction adds
+  async function handleMessageReactionAdd(reaction, user) {
+      // Your logic for handling message reactions goes here
+    }
+    
+    // Listen for message reactions
+    client.on("messageReactionAdd", async (reaction, user) => {
+      try {
+        await handleMessageReactionAdd(reaction, user);
+      } catch (error) {
+        console.error("Error handling message reaction:", error);
+      }
+    });
+      const message = await channel.messages.fetch(messageId);
+  
+      if (!message) {
+        console.error(`Message ${messageId} not found in channel ${channelId}`);
+        return;
+      }
+  
+      console.log(`Fetched message: ${message.content}`);
+      // Function to check if a user has a specific role
+      function hasRole(member, roleName) {
+        // Find the role by name
+        const role = member.guild.roles.cache.find(
+          (role) => role.name === roleName
+        );
+        // If the role exists and the user has it, return true43e786676
+        return role && member.roles.cache.has(role.id);
+      }
+      // Listen for message reactions
+      // Listen for message reactions
+      client.on("messageReactionAdd", async (reaction, user) => {
+        console.log("Reaction added:", reaction.emoji.name, "by user:", user.tag);
+        console.log("Message ID:", reaction.message.id); // Log message ID
+        console.log("Partial:", reaction.partial); // Log whether the reaction is partial
+  
+        // Get the GuildMember object corresponding to the reacting user
+        const guild = reaction.message.guild;
+        const member = await guild.members.fetch(user.id);
+  
+        // Check if the reaction is on the correct message and by a non-bot user
+        if (reaction.message.id === messageId && !user.bot) {
+          console.log("Reaction on the correct message and by a non-bot user.");
+  
+          // Check if the reaction is the desired one
+          if (reaction.emoji.name === "📩") {
+            console.log("Desired reaction detected: 📩");
+  
+            // Call the createTicket function to create a ticket
+            await createTicket(reaction.message, user);
+  
+            // Comment out or remove the line below to prevent removing the user's reaction
+            await reaction.users.remove(user);
+            console.log("Reaction processing completed.");
+          }
+        }
+  
+        // Check if the reaction is added to the welcome message in a ticket channel
+        if (
+          reaction.message.id === welcomeMessage.id &&
+          reaction.message.channel.name.startsWith("ticket-")
+        ) {
+          // Check if the reacting user is an admin
+          const isAdmin = hasRole(member, "Admin"); // Replace 'Administrator' with the actual role name
+  
+          // Check if the reaction is the ❌ emoji
+          if (reaction.emoji.name === "❌" && isAdmin) {
+            try {
+              // Delete the ticket channel
+              await reaction.message.channel.delete();
+              console.log(
+                `Ticket channel ${reaction.message.channel.name} deleted by admin ${user.tag}`
+              );
+            } catch (error) {
+              console.error("Error deleting ticket channel:", error.message);
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+  
+  // Initialize ticket counter
+  let ticketCounter = 1;
+  
+  // Create the ticket channel
+  async function createTicket(message, reactingUser) {
+    try {
+      const guild = message.guild;
+      const { PermissionsBitField } = require("discord.js");
+  
+      // Generate ticket name with an ascending number
+      const ticketName = `ticket-${ticketCounter++}`;
+  
+      // Create the ticket channel
+      const channel = await guild.channels.create({
+        name: ticketName,
+        type: ChannelType.GuildText,
+        permissionOverwrites: [
+          {
+            id: guild.id, // Using guild ID here
+            deny: [PermissionsBitField.Flags.ViewChannel],
+          },
+          {
+            id: message.author.id,
+            allow: [
+              PermissionsBitField.Flags.ViewChannel,
+              PermissionsBitField.Flags.SendMessages,
+            ],
+          },
+          {
+            id: reactingUser.id,
+            allow: [
+              PermissionsBitField.Flags.ViewChannel,
+              PermissionsBitField.Flags.SendMessages,
+            ],
+          },
+        ],
+      });
+  
+      console.log("Ticket channel created:", channel.name);
+  
+      // Send a welcome message in the ticket channel
+      const welcomeEmbed = new EmbedBuilder()
+        .setColor("#7289DA")
+        .setTitle("Welcome to Your Ticket!")
+        .setDescription(
+          "Please describe your issue and our staff will assist you shortly."
+        )
+        .setTimestamp();
+  
+      welcomeMessage = await channel.send({ embeds: [welcomeEmbed] });
+  
+      // React to the message with a close emoji
+      await welcomeMessage.react("❌");
+  
+      // Notify the user that the ticket has been created
+      const user = reactingUser;
+      await user.send(
+        `Your ticket has been created in ${channel}. Please describe your issue there.`
+      );
+  
+      console.log(`Ticket created for ${user.tag}`);
+    } catch (error) {
+      console.error("Error creating ticket channel:", error);
+    }
+  }
+  
+  // Parse JSON bodies
+  app.use(bodyParser.json());
+  
+  // Event handler for when the bot is ready
+  client.once("ready", () => {
+    setupBot(client, {
+      name: process.env.CUSTOM_STATUS,
+      type: process.env.ACTIVITY_TYPE,
+      status: process.env.ONLINE_STATUS,
+      customStatus: process.env.CUSTOM_STATUS,
+    });
+  });
+  
+  
+  // Define route to receive messages
+  app.post('/receive-message', (req, res) => {
+      const { message } = req.body;
+      console.log('Received message from web application:', message);
+  
+      // Send the received message to Discord
+      sendToDiscord(message)
+          .then(() => {
+              console.log('Message sent to Discord successfully');
+              res.sendStatus(200);
+          })
+          .catch(error => {
+              console.error('Error sending message to Discord:', error);
+              res.status(500).send('Internal Server Error');
+          });
+  });
+  
+  
+  
+  
+  
+  // Function to send message to Discord
+  async function sendToDiscord(message) {
+      try {
+          const channel = await client.channels.fetch(process.env.CHANNELID);
+          if (channel) {
+              await channel.send(message);
+              console.log('Message sent to Discord');
+          } else {
+              console.error('Unable to find Discord channel');
+          }
+      } catch (error) {
+          console.error('Error sending message to Discord:', error);
+      }
+  }
+  // Event handler for incoming messages
+  client.on("messageCreate", handleChatCommands);
+  
+  client.on("guildMemberAdd", (member) => {
+    handleGuildMemberAdd(member);
+  });
+  
+  // Initialize the ticket system
+  //initializeTicketSystem(client);
+  
+  // Log in to Discord with your bot's token
+  client.login(token);
+ 
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
